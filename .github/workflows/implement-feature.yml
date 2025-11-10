@@ -82,7 +82,7 @@ jobs:
       run: |
         echo "Creating pull request..."
         gh pr create \
-          --title "🤖 Auto-implement: ${{ github.event.inputs.feature_title }}" \
+          --title "🪄 Auto-implement: ${{ github.event.inputs.feature_title }}" \
           --body "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions." \
-          --head feature/auto-implement-${{ github.event.inputs.feature_id }} \
-          --base main || echo "PR creation failed"
+          --head "feature/auto-implement-${{ github.event.inputs.feature_id }}" \
+          --base "main" || echo "PR creation failed"
