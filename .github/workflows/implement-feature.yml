@@ -80,6 +80,8 @@ jobs:
 
     - name: Check Claude Code results and commit
       if: always()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Checking Claude Code Action results..."
         
@@ -87,17 +89,11 @@ jobs:
         git status
         
         echo "Configuring git user..."
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action Bot"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
         
-        echo "Current working directory:"
-        pwd
-        echo "Git repository info:"
-        git remote -v
-        
-        echo "Ensuring we're on main branch:"
-        git checkout main
-        git pull origin main
+        echo "Setting up authentication..."
+        git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
         
         if git diff --quiet && git diff --staged --quiet; then
           echo "⚠️ No changes detected from Claude Code"
@@ -123,13 +119,18 @@ jobs:
           🤖 Implemented by Claude Code via GitHub Actions"
         fi
         
+        echo "About to push to: $(git remote get-url origin)"
+        echo "Current branch: $(git branch --show-current)"
+        
         echo "Pushing changes..."
-        git push || {
+        git push origin HEAD:main || {
           echo "❌ Push failed with exit code $?"
           echo "Git status:"
           git status
           echo "Remote URL:"
           git remote get-url origin
+          echo "Git log:"
+          git log -1 --oneline
           exit 1
         }
         
