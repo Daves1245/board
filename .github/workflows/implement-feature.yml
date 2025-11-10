@@ -19,7 +19,7 @@ on:
 jobs:
   implement:
     runs-on: ubuntu-latest
-    environment: env
+    timeout-minutes: 10
     permissions:
       contents: write
       pull-requests: write
@@ -33,11 +33,11 @@ jobs:
     
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
-      env:
-        ANTHROPIC_LOG: debug
+      timeout-minutes: 8
+      continue-on-error: false
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        claude_args: --dangerously-skip-permissions
+        claude_args: --dangerously-skip-permissions --timeout 300
         prompt: |
           Please implement this feature request for our Next.js feature voting board:
           
@@ -52,12 +52,32 @@ jobs:
           
           Please implement this feature and integrate it seamlessly with the existing voting board interface.
 
-    - name: Commit and Push to Main
+    - name: Check for changes and commit
       run: |
-        echo "Committing and pushing to main..."
+        echo "Checking for file changes..."
+        git status
+        
+        if git diff --quiet && git diff --staged --quiet; then
+          echo "❌ No changes detected - Claude Code may have failed"
+          exit 1
+        else
+          echo "✅ Changes detected, proceeding with commit..."
+        fi
+        
+        echo "Configuring git..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
-        git checkout main
+        
+        echo "Adding and committing changes..."
         git add .
-        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}" || echo "No changes to commit"
-        git push origin main || echo "Push failed"
+        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
+
+        Auto-implemented feature #${{ github.event.inputs.feature_id }}
+        ${{ github.event.inputs.feature_content }}
+
+        🤖 Implemented by Claude Code via GitHub Actions"
+        
+        echo "Pushing to main..."
+        git push origin main
+        
+        echo "✅ Feature implementation complete!"
