@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma
+/prisma/.env
+
+# Vim swap files
+*.swp
+*.swo
+
+# Temporary documentation files
+IMPLEMENTATION_NOTES.md
+IMPLEMENTATION_SYSTEM.md
+TESTING_CHANGES.md
+SETUP_GUIDE.md
+
+# WebSocket server logs
+ws-server.log
