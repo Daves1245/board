@@ -45,16 +45,6 @@ jobs:
         echo "Feature Description: ${{ github.event.inputs.feature_content }}"
         echo "================================"
     
-    - name: Check API key availability
-      run: |
-        if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-          echo "❌ ANTHROPIC_API_KEY secret is not set"
-          echo "Please add your Anthropic API key as ANTHROPIC_API_KEY in repository secrets"
-          exit 1
-        else
-          echo "✅ ANTHROPIC_API_KEY secret is available"
-        fi
-    
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
       env:
