@@ -51,16 +51,33 @@ jobs:
     
     - name: Install Claude Code CLI
       run: |
+        echo "Downloading Claude Code CLI..."
         curl -fsSL https://claude.ai/cli/install.sh | sh
+        
+        echo "Adding to PATH..."
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo "Claude CLI installed"
+        export PATH="$HOME/.local/bin:$PATH"
+        
+        echo "Verifying installation..."
+        ls -la $HOME/.local/bin/ || echo "Directory doesn't exist"
+        which claude-code || echo "claude-code not found in PATH"
+        
+        echo "Trying alternative installation method..."
+        mkdir -p $HOME/.local/bin
+        curl -L -o $HOME/.local/bin/claude-code https://github.com/anthropics/claude-code/releases/latest/download/claude-code-linux-x86_64
+        chmod +x $HOME/.local/bin/claude-code
+        
+        echo "Final verification..."
+        ls -la $HOME/.local/bin/claude-code || echo "Still not found"
+        $HOME/.local/bin/claude-code --version || echo "Version check failed"
     
     - name: Implement feature with Claude
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       run: |
         echo "Starting Claude Code implementation..."
-        claude-code --prompt "Please implement this feature request for our Next.js feature voting board:
+        export PATH="$HOME/.local/bin:$PATH"
+        $HOME/.local/bin/claude-code --prompt "Please implement this feature request for our Next.js feature voting board:
 
         **Feature Title:** ${{ github.event.inputs.feature_title }}
         **Feature Description:** ${{ github.event.inputs.feature_content }}
