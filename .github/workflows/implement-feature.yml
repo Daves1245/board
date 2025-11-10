@@ -68,23 +68,18 @@ jobs:
       run: |
         echo "Pushing feature branch..."
         git add .
-        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
-
-        Auto-implemented feature #${{ github.event.inputs.feature_id }}
-        ${{ github.event.inputs.feature_content }}
-
-        🤖 Implemented by Claude Code via GitHub Actions" || echo "No changes to commit"
+        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}" || echo "No changes to commit"
         git push origin feature/auto-implement-${{ github.event.inputs.feature_id }} || echo "Push failed"
     
     - name: Create Pull Request
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PR_TITLE: "🪄 Auto-implement: ${{ github.event.inputs.feature_title }}"
-        PR_BODY: "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions."
+        PR_TITLE: "✨ Auto-implement: ${{ github.event.inputs.feature_title }}"
       run: |
         echo "Creating pull request..."
+        echo "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions." > pr_body.md
         gh pr create \
           --title "$PR_TITLE" \
-          --body "$PR_BODY" \
+          --body-file "pr_body.md" \
           --head "feature/auto-implement-${{ github.event.inputs.feature_id }}" \
           --base "main" || echo "PR creation failed"
