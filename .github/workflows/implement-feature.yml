@@ -33,6 +33,8 @@ jobs:
     
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
+      env:
+        ANTHROPIC_LOG: debug
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         claude_args: --dangerously-skip-permissions
