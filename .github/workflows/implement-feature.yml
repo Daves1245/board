@@ -19,6 +19,7 @@ on:
 jobs:
   implement:
     runs-on: ubuntu-latest
+    environment: env
     timeout-minutes: 10
     permissions:
       contents: write
@@ -31,23 +32,10 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Verify API Key
-      run: |
-        if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-          echo "❌ ANTHROPIC_API_KEY secret is not set or empty"
-          echo "Please add your Anthropic API key as ANTHROPIC_API_KEY in repository secrets"
-          echo "Go to: Repository Settings → Secrets and variables → Actions → New repository secret"
-          exit 1
-        else
-          echo "✅ ANTHROPIC_API_KEY secret is available"
-        fi
-    
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
       timeout-minutes: 8
       continue-on-error: false
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         claude_args: --dangerously-skip-permissions --timeout 300
