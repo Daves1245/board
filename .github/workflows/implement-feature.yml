@@ -79,10 +79,12 @@ jobs:
     - name: Create Pull Request
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_TITLE: "🪄 Auto-implement: ${{ github.event.inputs.feature_title }}"
+        PR_BODY: "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions."
       run: |
         echo "Creating pull request..."
         gh pr create \
-          --title "🪄 Auto-implement: ${{ github.event.inputs.feature_title }}" \
-          --body "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions." \
+          --title "$PR_TITLE" \
+          --body "$PR_BODY" \
           --head "feature/auto-implement-${{ github.event.inputs.feature_id }}" \
           --base "main" || echo "PR creation failed"
