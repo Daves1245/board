@@ -32,38 +32,20 @@ jobs:
         git checkout -b feature/auto-implement-${{ github.event.inputs.feature_id }}
         echo "Created branch: feature/auto-implement-${{ github.event.inputs.feature_id }}"
     
-    - name: Create feature implementation issue
-      id: create-issue
+    - name: Log feature implementation details
       run: |
-        # Create a temporary issue to trigger Claude Code Action
-        ISSUE_BODY="@claude Please implement this feature request for our Next.js feature voting board:
-
-        **Feature Title:** ${{ github.event.inputs.feature_title }}
-        **Feature Description:** ${{ github.event.inputs.feature_content }}
-
-        This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication. 
-        Please analyze the existing codebase structure, implement the requested feature following existing patterns, 
-        ensure TypeScript compatibility, maintain existing styling, and commit your changes.
-
-        Key files to consider:
-        - app/page.tsx (main page)
-        - app/components/ (React components)  
-        - app/api/ (API routes)
-        - prisma/schema.prisma (database schema)
-
-        Please implement this feature and integrate it seamlessly with the existing voting board interface.
-        
-        Feature ID: ${{ github.event.inputs.feature_id }}"
-        
-        echo "Creating implementation issue..."
-        echo "$ISSUE_BODY"
+        echo "=== FEATURE IMPLEMENTATION ==="
+        echo "Feature ID: ${{ github.event.inputs.feature_id }}"
+        echo "Feature Title: ${{ github.event.inputs.feature_title }}"
+        echo "Feature Description: ${{ github.event.inputs.feature_content }}"
+        echo "================================"
     
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        claude_args: >-
-          --prompt "Please implement this feature request for our Next.js feature voting board:
+        prompt: |
+          Please implement this feature request for our Next.js feature voting board:
           
           Feature Title: ${{ github.event.inputs.feature_title }}
           Feature Description: ${{ github.event.inputs.feature_content }}
@@ -74,7 +56,7 @@ jobs:
           
           Key files: app/page.tsx, app/components/, app/api/, prisma/schema.prisma
           
-          Please implement this feature and integrate it seamlessly with the existing voting board interface."
+          Please implement this feature and integrate it seamlessly with the existing voting board interface.
     
     - name: Push feature branch
       run: |
