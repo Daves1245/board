@@ -4,162 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       feature_id:
-        description: 'Feature ID'
+        description: Feature ID
         required: true
         type: string
       feature_title:
-        description: 'Feature Title'
+        description: Feature Title
         required: true
         type: string
       feature_content:
-        description: 'Feature Description'
+        description: Feature Description
         required: true
         type: string
 
 jobs:
   implement:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Create feature branch
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action Bot"
-        git checkout -b feature/auto-implement-${{ github.event.inputs.feature_id }}
-    
-    - name: Install Claude Code CLI
-      run: |
-        curl -fsSL https://claude.ai/cli/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    
-    - name: Implement feature with Claude
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      run: |
-        claude-code --prompt "
-        Please implement this feature request for our Next.js feature voting board:
-        
-        **Feature Title:** ${{ github.event.inputs.feature_title }}
-        **Feature Description:** ${{ github.event.inputs.feature_content }}
-        
-        This is a Next.js 14+ app with:
-        - TypeScript and Tailwind CSS
-        - Prisma ORM with PostgreSQL
-        - NextAuth.js authentication
-        - Real-time voting system
-        - Feature implementation via GitHub Actions
-        
-        Key files:
-        - app/page.tsx (main page with feature list)
-        - app/components/ (React components)
-        - app/api/ (API routes)
-        - prisma/schema.prisma (database schema)
-        
-        Please:
-        1. Analyze the existing codebase structure
-        2. Implement the requested feature following existing patterns
-        3. Ensure TypeScript compatibility
-        4. Maintain existing styling and UI patterns
-        5. Test that the implementation builds successfully
-        6. Commit your changes with a descriptive message
-        
-        The feature should integrate seamlessly with the existing voting board interface.
-        "
-    
-    - name: Run build check
-      run: |
-        npm run build || echo "Build failed - will note in PR"
-    
-    - name: Commit changes
-      run: |
-        git add .
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-          echo "CHANGES_MADE=false" >> $GITHUB_ENV
-        else
-          git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
-
-Auto-implemented feature #${{ github.event.inputs.feature_id }}
-
-${{ github.event.inputs.feature_content }}
-
-🤖 Implemented by Claude Code via GitHub Actions"
-          echo "CHANGES_MADE=true" >> $GITHUB_ENV
-        fi
-    
-    - name: Push changes
-      if: env.CHANGES_MADE == 'true'
-      run: git push origin feature/auto-implement-${{ github.event.inputs.feature_id }}
-    
-    - name: Create Pull Request
-      if: env.CHANGES_MADE == 'true'
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh pr create \
-          --title "🤖 Auto-implement: ${{ github.event.inputs.feature_title }}" \
-          --body "## Auto-implemented Feature
-
-**Feature ID:** ${{ github.event.inputs.feature_id }}
-**Title:** ${{ github.event.inputs.feature_title }}
-**Description:** ${{ github.event.inputs.feature_content }}
-
-This feature was automatically implemented by our AI agent after reaching the vote threshold.
-
-### Implementation Details
-- Implemented using Claude Code CLI
-- Follows existing codebase patterns
-- Maintains TypeScript compatibility
-- Preserves existing UI/UX patterns
-
-### Review Notes
-Please review the implementation and merge if it looks good. The feature will be live once merged.
-
----
-*This PR was created automatically by GitHub Actions*" \
-          --head feature/auto-implement-${{ github.event.inputs.feature_id }} \
-          --base main
-    
-    - name: Update feature status in database
-      if: env.CHANGES_MADE == 'true'
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      run: |
-        npx prisma db push --accept-data-loss || echo "Database update failed"
-        node -e "
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
-        
-        async function updateFeature() {
-          try {
-            await prisma.feature.update({
-              where: { id: '${{ github.event.inputs.feature_id }}' },
-              data: { 
-                implementedAt: new Date(),
-                votes: 5 
-              }
-            });
-            console.log('✅ Feature marked as implemented in database');
-          } catch (error) {
-            console.error('❌ Database update failed:', error);
-          } finally {
-            await prisma.\$disconnect();
-          }
-        }
-        
-        updateFeature();
-        " || echo "Database update script failed"
+    - uses: actions/checkout@v4
+    - name: Test step
+      run: echo "Feature ID is ${{ github.event.inputs.feature_id }}"
