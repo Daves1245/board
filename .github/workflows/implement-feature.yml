@@ -25,15 +25,6 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
     - name: Create feature branch
       run: |
         git config --local user.email "action@github.com"
@@ -41,50 +32,18 @@ jobs:
         git checkout -b feature/auto-implement-${{ github.event.inputs.feature_id }}
         echo "Created branch: feature/auto-implement-${{ github.event.inputs.feature_id }}"
     
-    - name: Log feature details
+    - name: Create feature implementation issue
+      id: create-issue
       run: |
-        echo "=== FEATURE IMPLEMENTATION ==="
-        echo "Feature ID: ${{ github.event.inputs.feature_id }}"
-        echo "Feature Title: ${{ github.event.inputs.feature_title }}"
-        echo "Feature Content: ${{ github.event.inputs.feature_content }}"
-        echo "================================"
-    
-    - name: Install Claude Code CLI
-      run: |
-        echo "Downloading Claude Code CLI..."
-        curl -fsSL https://claude.ai/cli/install.sh | sh
-        
-        echo "Adding to PATH..."
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        export PATH="$HOME/.local/bin:$PATH"
-        
-        echo "Verifying installation..."
-        ls -la $HOME/.local/bin/ || echo "Directory doesn't exist"
-        which claude-code || echo "claude-code not found in PATH"
-        
-        echo "Trying alternative installation method..."
-        mkdir -p $HOME/.local/bin
-        curl -L -o $HOME/.local/bin/claude-code https://github.com/anthropics/claude-code/releases/latest/download/claude-code-linux-x86_64
-        chmod +x $HOME/.local/bin/claude-code
-        
-        echo "Final verification..."
-        ls -la $HOME/.local/bin/claude-code || echo "Still not found"
-        $HOME/.local/bin/claude-code --version || echo "Version check failed"
-    
-    - name: Implement feature with Claude
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      run: |
-        echo "Starting Claude Code implementation..."
-        export PATH="$HOME/.local/bin:$PATH"
-        $HOME/.local/bin/claude-code --prompt "Please implement this feature request for our Next.js feature voting board:
+        # Create a temporary issue to trigger Claude Code Action
+        ISSUE_BODY="@claude Please implement this feature request for our Next.js feature voting board:
 
         **Feature Title:** ${{ github.event.inputs.feature_title }}
         **Feature Description:** ${{ github.event.inputs.feature_content }}
 
         This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication. 
         Please analyze the existing codebase structure, implement the requested feature following existing patterns, 
-        ensure TypeScript compatibility, maintain existing styling, and commit your changes with a descriptive message.
+        ensure TypeScript compatibility, maintain existing styling, and commit your changes.
 
         Key files to consider:
         - app/page.tsx (main page)
@@ -92,29 +51,30 @@ jobs:
         - app/api/ (API routes)
         - prisma/schema.prisma (database schema)
 
-        Please implement this feature and integrate it seamlessly with the existing voting board interface."
-        echo "Claude Code implementation completed"
-    
-    - name: Check for changes and push
-      run: |
-        echo "Checking for changes..."
-        git status
+        Please implement this feature and integrate it seamlessly with the existing voting board interface.
         
-        if git diff --staged --quiet && git diff --quiet && git ls-files --others --exclude-standard | grep -q .; then
-          echo "No changes detected"
-        else
-          echo "Changes detected, committing..."
-          git add .
-          git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
+        Feature ID: ${{ github.event.inputs.feature_id }}"
+        
+        echo "Creating implementation issue..."
+        echo "$ISSUE_BODY"
+    
+    - name: Use Claude Code Action
+      uses: anthropics/claude-code-action@v1
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        claude_args: --prompt "Please implement this feature request for our Next.js feature voting board: **Feature Title:** ${{ github.event.inputs.feature_title }} **Feature Description:** ${{ github.event.inputs.feature_content }} This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication. Please analyze the existing codebase structure, implement the requested feature following existing patterns, ensure TypeScript compatibility, maintain existing styling, and commit your changes. Key files to consider: app/page.tsx (main page), app/components/ (React components), app/api/ (API routes), prisma/schema.prisma (database schema). Please implement this feature and integrate it seamlessly with the existing voting board interface."
+    
+    - name: Push feature branch
+      run: |
+        echo "Pushing feature branch..."
+        git add .
+        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
 
-          Auto-implemented feature #${{ github.event.inputs.feature_id }}
-          ${{ github.event.inputs.feature_content }}
+        Auto-implemented feature #${{ github.event.inputs.feature_id }}
+        ${{ github.event.inputs.feature_content }}
 
-          🤖 Implemented by Claude Code via GitHub Actions" || echo "Commit failed"
-          
-          echo "Pushing branch..."
-          git push origin feature/auto-implement-${{ github.event.inputs.feature_id }} || echo "Push failed"
-        fi
+        🤖 Implemented by Claude Code via GitHub Actions" || echo "No changes to commit"
+        git push origin feature/auto-implement-${{ github.event.inputs.feature_id }} || echo "Push failed"
     
     - name: Create Pull Request
       env:
@@ -123,6 +83,6 @@ jobs:
         echo "Creating pull request..."
         gh pr create \
           --title "🤖 Auto-implement: ${{ github.event.inputs.feature_title }}" \
-          --body "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code CLI via GitHub Actions." \
+          --body "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions." \
           --head feature/auto-implement-${{ github.event.inputs.feature_id }} \
           --base main || echo "PR creation failed"
