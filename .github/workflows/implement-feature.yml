@@ -31,55 +31,12 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Create feature branch
+    - name: Commit and Push to Main
       run: |
+        echo "Committing and pushing to main..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
-        git checkout -b feature/auto-implement-${{ github.event.inputs.feature_id }}
-        echo "Created branch: feature/auto-implement-${{ github.event.inputs.feature_id }}"
-    
-    - name: Log feature implementation details
-      run: |
-        echo "=== FEATURE IMPLEMENTATION ==="
-        echo "Feature ID: ${{ github.event.inputs.feature_id }}"
-        echo "Feature Title: ${{ github.event.inputs.feature_title }}"
-        echo "Feature Description: ${{ github.event.inputs.feature_content }}"
-        echo "================================"
-    
-    - name: Use Claude Code Action
-      uses: anthropics/claude-code-action@v1
-      with:
-        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        prompt: |
-          Please implement this feature request for our Next.js feature voting board:
-          
-          Feature Title: ${{ github.event.inputs.feature_title }}
-          Feature Description: ${{ github.event.inputs.feature_content }}
-          
-          This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication.
-          Please analyze the existing codebase structure, implement the requested feature following existing patterns,
-          ensure TypeScript compatibility, maintain existing styling, and commit your changes.
-          
-          Key files: app/page.tsx, app/components/, app/api/, prisma/schema.prisma
-          
-          Please implement this feature and integrate it seamlessly with the existing voting board interface.
-    
-    - name: Push feature branch
-      run: |
-        echo "Pushing feature branch..."
+        git checkout main
         git add .
         git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}" || echo "No changes to commit"
-        git push origin feature/auto-implement-${{ github.event.inputs.feature_id }} || echo "Push failed"
-    
-    - name: Create Pull Request
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PR_TITLE: "✨ Auto-implement: ${{ github.event.inputs.feature_title }}"
-      run: |
-        echo "Creating pull request..."
-        echo "Auto-implemented feature ID ${{ github.event.inputs.feature_id }}: ${{ github.event.inputs.feature_content }}. Implemented by Claude Code Action via GitHub Actions." > pr_body.md
-        gh pr create \
-          --title "$PR_TITLE" \
-          --body-file "pr_body.md" \
-          --head "feature/auto-implement-${{ github.event.inputs.feature_id }}" \
-          --base "main" || echo "PR creation failed"
+        git push origin main || echo "Push failed"
