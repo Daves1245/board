@@ -89,7 +89,14 @@ jobs:
         echo "Configuring git..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
-        git config --local url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        
+        echo "Setting up git authentication..."
+        git remote -v
+        echo "Current remote URL: $(git remote get-url origin)"
+        
+        # Set up authentication using token
+        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        echo "Updated remote URL: $(git remote get-url origin)"
         
         if git diff --quiet && git diff --staged --quiet; then
           echo "⚠️ No changes detected from Claude Code"
@@ -116,6 +123,27 @@ jobs:
         fi
         
         echo "Pushing to main..."
-        git push origin main
+        echo "About to push with remote: $(git remote get-url origin)"
+        
+        if git push origin main; then
+          echo "✅ Successfully pushed to main!"
+        else
+          echo "❌ Push failed. Attempting troubleshooting..."
+          echo "Git status after failed push:"
+          git status
+          echo "Remote info:"
+          git remote -v
+          echo "Current branch:"
+          git branch
+          echo "Last commit:"
+          git log -1 --oneline
+          
+          # Try alternative push method
+          echo "Trying alternative push method..."
+          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main || {
+            echo "❌ Alternative push also failed"
+            exit 1
+          }
+        fi
         
         echo "✅ Workflow complete!"
