@@ -45,12 +45,6 @@ jobs:
         echo "Feature Description: ${{ github.event.inputs.feature_content }}"
         echo "================================"
     
-    - name: DEBUG - Print API Key
-      run: |
-        echo "🚨 WARNING: This step prints the first 8 characters of the ANTHROPIC_API_KEY for debugging purposes."
-        echo "🚨 Please ensure this workflow is running in a private repository and rotate the API key after this test."
-        echo "API Key starts with: ${{ secrets.ANTHROPIC_API_KEY }}"
-    
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
       with:
