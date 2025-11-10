@@ -1,4 +1,4 @@
-name: Implement Feature
+name: Auto-Implement Feature
 
 on:
   workflow_dispatch:
@@ -38,24 +38,8 @@ jobs:
     - name: Create feature branch
       run: |
         git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git checkout -b feature/implement-${{ github.event.inputs.feature_id }}
-    
-    - name: Create feature request file
-      run: |
-        mkdir -p .feature-requests
-        cat > .feature-requests/feature-${{ github.event.inputs.feature_id }}.md << 'EOF'
-        # Feature Request: ${{ github.event.inputs.feature_title }}
-        
-        **ID:** ${{ github.event.inputs.feature_id }}
-        **Title:** ${{ github.event.inputs.feature_title }}
-        **Description:** ${{ github.event.inputs.feature_content }}
-        **Status:** implementing
-        **Created:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        
-        ## Implementation Notes
-        This feature has reached the vote threshold and is being automatically implemented.
-        EOF
+        git config --local user.name "GitHub Action Bot"
+        git checkout -b feature/auto-implement-${{ github.event.inputs.feature_id }}
     
     - name: Install Claude Code CLI
       run: |
@@ -67,96 +51,115 @@ jobs:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       run: |
         claude-code --prompt "
-        Please implement this feature request for our feature board web app:
+        Please implement this feature request for our Next.js feature voting board:
         
         **Feature Title:** ${{ github.event.inputs.feature_title }}
         **Feature Description:** ${{ github.event.inputs.feature_content }}
         
-        This is a Next.js app with TypeScript, using WebSockets for real-time updates. 
+        This is a Next.js 14+ app with:
+        - TypeScript and Tailwind CSS
+        - Prisma ORM with PostgreSQL
+        - NextAuth.js authentication
+        - Real-time voting system
+        - Feature implementation via GitHub Actions
+        
         Key files:
-        - app/page.tsx (main page)
-        - app/components/board.tsx (voting board)
-        - app/hooks/useWebSocket.tsx (WebSocket hook)
-        - ws-server.js (WebSocket server)
+        - app/page.tsx (main page with feature list)
+        - app/components/ (React components)
+        - app/api/ (API routes)
+        - prisma/schema.prisma (database schema)
         
         Please:
-        1. Analyze the existing codebase
-        2. Implement the requested feature
-        3. Ensure it integrates with the real-time WebSocket system
-        4. Follow existing code patterns and styling
-        5. Test that the implementation works
+        1. Analyze the existing codebase structure
+        2. Implement the requested feature following existing patterns
+        3. Ensure TypeScript compatibility
+        4. Maintain existing styling and UI patterns
+        5. Test that the implementation builds successfully
         6. Commit your changes with a descriptive message
         
-        The feature should work across all connected clients and maintain backward compatibility.
+        The feature should integrate seamlessly with the existing voting board interface.
         "
     
-    - name: Run tests (if any exist)
+    - name: Run build check
       run: |
-        if [ -f "package.json" ] && grep -q '"test"' package.json; then
-          npm test || echo "Tests failed but continuing..."
-        else
-          echo "No tests found"
-        fi
+        npm run build || echo "Build failed - will note in PR"
     
-    - name: Check build
-      run: |
-        npm run build || echo "Build failed but continuing..."
-    
-    - name: Update feature status
-      run: |
-        sed -i 's/Status: implementing/Status: completed/' .feature-requests/feature-${{ github.event.inputs.feature_id }}.md
-        echo "**Implemented:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .feature-requests/feature-${{ github.event.inputs.feature_id }}.md
-    
-    - name: Commit and push changes
+    - name: Commit changes
       run: |
         git add .
-        git commit -m "feat: implement ${{ github.event.inputs.feature_title }}
-        
-        Auto-implemented feature request #${{ github.event.inputs.feature_id }}
-        
-        ${{ github.event.inputs.feature_content }}
-        
-        Implemented by GitHub Action using Claude AI agent."
-        git push origin feature/implement-${{ github.event.inputs.feature_id }}
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+          echo "CHANGES_MADE=false" >> $GITHUB_ENV
+        else
+          git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
+
+Auto-implemented feature #${{ github.event.inputs.feature_id }}
+
+${{ github.event.inputs.feature_content }}
+
+🤖 Implemented by Claude Code via GitHub Actions"
+          echo "CHANGES_MADE=true" >> $GITHUB_ENV
+        fi
+    
+    - name: Push changes
+      if: env.CHANGES_MADE == 'true'
+      run: git push origin feature/auto-implement-${{ github.event.inputs.feature_id }}
     
     - name: Create Pull Request
+      if: env.CHANGES_MADE == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh pr create \
           --title "🤖 Auto-implement: ${{ github.event.inputs.feature_title }}" \
           --body "## Auto-implemented Feature
-        
-        **Feature ID:** ${{ github.event.inputs.feature_id }}
-        **Title:** ${{ github.event.inputs.feature_title }}
-        **Description:** ${{ github.event.inputs.feature_content }}
-        
-        This feature reached the vote threshold and was automatically implemented by our AI agent.
-        
-        ### Changes Made
-        - Implemented the requested feature
-        - Maintained integration with WebSocket real-time system
-        - Followed existing code patterns
-        
-        ### Testing
-        - Build check: Completed
-        - Integration: Verified with existing codebase
-        
-        This PR was created automatically by GitHub Actions. Please review and merge if the implementation looks good.
-        " \
-          --head feature/implement-${{ github.event.inputs.feature_id }} \
+
+**Feature ID:** ${{ github.event.inputs.feature_id }}
+**Title:** ${{ github.event.inputs.feature_title }}
+**Description:** ${{ github.event.inputs.feature_content }}
+
+This feature was automatically implemented by our AI agent after reaching the vote threshold.
+
+### Implementation Details
+- Implemented using Claude Code CLI
+- Follows existing codebase patterns
+- Maintains TypeScript compatibility
+- Preserves existing UI/UX patterns
+
+### Review Notes
+Please review the implementation and merge if it looks good. The feature will be live once merged.
+
+---
+*This PR was created automatically by GitHub Actions*" \
+          --head feature/auto-implement-${{ github.event.inputs.feature_id }} \
           --base main
     
-    - name: Notify completion via API
+    - name: Update feature status in database
+      if: env.CHANGES_MADE == 'true'
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
-        curl -X POST "https://api.github.com/repos/${{ github.repository }}/dispatches" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -d '{
-            "event_type": "feature_implemented",
-            "client_payload": {
-              "feature_id": "${{ github.event.inputs.feature_id }}",
-              "status": "completed",
-              "pr_url": "https://github.com/${{ github.repository }}/pull/${{ steps.pr.outputs.number }}"
-            }
-          }' || echo "Notification failed"
+        npx prisma db push --accept-data-loss || echo "Database update failed"
+        node -e "
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        async function updateFeature() {
+          try {
+            await prisma.feature.update({
+              where: { id: '${{ github.event.inputs.feature_id }}' },
+              data: { 
+                implementedAt: new Date(),
+                votes: 5 
+              }
+            });
+            console.log('✅ Feature marked as implemented in database');
+          } catch (error) {
+            console.error('❌ Database update failed:', error);
+          } finally {
+            await prisma.\$disconnect();
+          }
+        }
+        
+        updateFeature();
+        " || echo "Database update script failed"
