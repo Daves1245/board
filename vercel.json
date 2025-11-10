@@ -4,14 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret", 
-    "NEXTAUTH_URL": "@nextauth_url",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key",
-    "GITHUB_TOKEN": "@github_token",
-    "GITHUB_REPOSITORY": "@github_repository"
-  },
   "functions": {
     "app/api/**": {
       "maxDuration": 30
