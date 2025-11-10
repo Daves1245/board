@@ -86,17 +86,18 @@ jobs:
         echo "Current git status:"
         git status
         
-        echo "Configuring git..."
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action Bot"
+        echo "Configuring git user..."
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action Bot"
         
-        echo "Setting up git authentication..."
+        echo "Current working directory:"
+        pwd
+        echo "Git repository info:"
         git remote -v
-        echo "Current remote URL: $(git remote get-url origin)"
         
-        # Set up authentication using token
-        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-        echo "Updated remote URL: $(git remote get-url origin)"
+        echo "Ensuring we're on main branch:"
+        git checkout main
+        git pull origin main
         
         if git diff --quiet && git diff --staged --quiet; then
           echo "⚠️ No changes detected from Claude Code"
@@ -122,28 +123,14 @@ jobs:
           🤖 Implemented by Claude Code via GitHub Actions"
         fi
         
-        echo "Pushing to main..."
-        echo "About to push with remote: $(git remote get-url origin)"
-        
-        if git push origin main; then
-          echo "✅ Successfully pushed to main!"
-        else
-          echo "❌ Push failed. Attempting troubleshooting..."
-          echo "Git status after failed push:"
+        echo "Pushing changes..."
+        git push || {
+          echo "❌ Push failed with exit code $?"
+          echo "Git status:"
           git status
-          echo "Remote info:"
-          git remote -v
-          echo "Current branch:"
-          git branch
-          echo "Last commit:"
-          git log -1 --oneline
-          
-          # Try alternative push method
-          echo "Trying alternative push method..."
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main || {
-            echo "❌ Alternative push also failed"
-            exit 1
-          }
-        fi
+          echo "Remote URL:"
+          git remote get-url origin
+          exit 1
+        }
         
-        echo "✅ Workflow complete!"
+        echo "✅ Successfully pushed changes!"
