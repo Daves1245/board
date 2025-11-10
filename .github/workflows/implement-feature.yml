@@ -31,6 +31,24 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Use Claude Code Action
+      uses: anthropics/claude-code-action@v1
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        prompt: |
+          Please implement this feature request for our Next.js feature voting board:
+          
+          Feature Title: ${{ github.event.inputs.feature_title }}
+          Feature Description: ${{ github.event.inputs.feature_content }}
+          
+          This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication.
+          Please analyze the existing codebase structure, implement the requested feature following existing patterns,
+          ensure TypeScript compatibility, maintain existing styling, and commit your changes.
+          
+          Key files: app/page.tsx, app/components/, app/api/, prisma/schema.prisma
+          
+          Please implement this feature and integrate it seamlessly with the existing voting board interface.
+
     - name: Commit and Push to Main
       run: |
         echo "Committing and pushing to main..."
