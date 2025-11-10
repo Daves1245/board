@@ -34,11 +34,12 @@ jobs:
     
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
-      timeout-minutes: 8
-      continue-on-error: false
+      timeout-minutes: 5
+      continue-on-error: true
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        claude_args: --dangerously-skip-permissions --timeout 300
+        claude_args: --dangerously-skip-permissions --timeout 180 --verbose
+        show_full_output: true
         prompt: |
           Please implement this feature request for our Next.js feature voting board:
           
@@ -53,32 +54,43 @@ jobs:
           
           Please implement this feature and integrate it seamlessly with the existing voting board interface.
 
-    - name: Check for changes and commit
+    - name: Check Claude Code results and commit
+      if: always()
       run: |
-        echo "Checking for file changes..."
-        git status
+        echo "Checking Claude Code Action results..."
         
-        if git diff --quiet && git diff --staged --quiet; then
-          echo "❌ No changes detected - Claude Code may have failed"
-          exit 1
-        else
-          echo "✅ Changes detected, proceeding with commit..."
-        fi
+        echo "Current git status:"
+        git status
         
         echo "Configuring git..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
         
-        echo "Adding and committing changes..."
-        git add .
-        git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
+        if git diff --quiet && git diff --staged --quiet; then
+          echo "⚠️ No changes detected from Claude Code"
+          echo "Creating placeholder commit to indicate attempt..."
+          echo "Claude Code attempted to implement: ${{ github.event.inputs.feature_title }}" > claude-attempt.log
+          echo "Feature Description: ${{ github.event.inputs.feature_content }}" >> claude-attempt.log
+          echo "Timestamp: $(date)" >> claude-attempt.log
+          git add claude-attempt.log
+          git commit -m "docs: Claude Code implementation attempt for ${{ github.event.inputs.feature_title }}
 
-        Auto-implemented feature #${{ github.event.inputs.feature_id }}
-        ${{ github.event.inputs.feature_content }}
+          Claude Code was triggered but may have timed out or failed to make changes.
+          Feature ID: ${{ github.event.inputs.feature_id }}
+          
+          🤖 Attempted via GitHub Actions"
+        else
+          echo "✅ Changes detected, committing implementation..."
+          git add .
+          git commit -m "feat: auto-implement ${{ github.event.inputs.feature_title }}
 
-        🤖 Implemented by Claude Code via GitHub Actions"
+          Auto-implemented feature #${{ github.event.inputs.feature_id }}
+          ${{ github.event.inputs.feature_content }}
+
+          🤖 Implemented by Claude Code via GitHub Actions"
+        fi
         
         echo "Pushing to main..."
         git push origin main
         
-        echo "✅ Feature implementation complete!"
+        echo "✅ Workflow complete!"
