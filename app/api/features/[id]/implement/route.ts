@@ -158,6 +158,7 @@ export async function POST(
     await prisma.feature.update({
       where: { id: featureId },
       data: {
+        status: 'implemented',
         implementedAt: new Date(),
         votes: voteCount,
       }

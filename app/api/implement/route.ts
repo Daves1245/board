@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +13,28 @@ export async function POST(request: NextRequest) {
       throw new Error('GITHUB_REPOSITORY environment variable is required (format: owner/repo)');
     }
 
+    // Get current vote count before clearing votes
+    const voteCount = await prisma.vote.count({
+      where: { featureId: id }
+    });
+
+    // Mark feature as "implementing" in the database
+    await prisma.feature.update({
+      where: { id: id },
+      data: {
+        status: 'implementing',
+        implementationStartedAt: new Date(),
+        votes: voteCount,
+      }
+    });
+
+    // Clear all votes since implementation has been triggered
+    await prisma.vote.deleteMany({
+      where: { featureId: id }
+    });
+
     console.log(`🤖 Triggering GitHub Action for: "${title}"`);
-    
+
     // Trigger GitHub Action workflow
     const response = await fetch(
       `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/implement-feature.yml/dispatches`,
@@ -47,7 +68,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `GitHub Action triggered for: ${title}`,
       id: id,
-      status: 'github_action_triggered'
+      status: 'implementing'
     });
 
   } catch (error) {

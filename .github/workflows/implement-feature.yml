@@ -156,14 +156,39 @@ jobs:
         
         echo "✅ Successfully pushed changes!"
         
+    - name: Mark feature as implemented
+      if: success()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "📝 Marking feature as implemented in database..."
+
+        # Call the API to mark feature as implemented
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "${NEXTAUTH_URL:-https://board-three-virid.vercel.app}/api/features/${{ github.event.inputs.feature_id }}/complete")
+
+        http_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | head -n-1)
+
+        if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+          echo "✅ Feature successfully marked as implemented"
+          echo "$body"
+        else
+          echo "⚠️ Failed to mark feature as implemented (HTTP $http_code)"
+          echo "$body"
+          echo "The feature was deployed but status wasn't updated - please update manually"
+        fi
+
     - name: Trigger deployment
       if: success()
       run: |
         echo "🚀 Changes pushed to main - Vercel will auto-deploy"
         echo "The Board will be updated with new feature in 1-2 minutes"
         echo "Feature: ${{ github.event.inputs.feature_title }}"
-        
-        # Optional: Trigger deployment workflow explicitly  
+
+        # Optional: Trigger deployment workflow explicitly
         curl -X POST \
           -H "Accept: application/vnd.github.v3+json" \
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
