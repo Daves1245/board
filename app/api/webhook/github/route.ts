@@ -75,7 +75,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function extractFeatureId(workflow_run: any, payload: any): string | null {
+interface WorkflowRun {
+  head_commit?: {
+    message?: string;
+  };
+  html_url?: string;
+  name?: string;
+}
+
+interface WebhookPayload {
+  action?: string;
+  workflow_run?: WorkflowRun & {
+    inputs?: {
+      feature_id?: string;
+    };
+  };
+  conclusion?: string;
+}
+
+function extractFeatureId(workflow_run: WorkflowRun, payload: WebhookPayload): string | null {
   // Try to extract feature ID from workflow inputs first (most reliable)
   try {
     if (payload.workflow_run?.inputs?.feature_id) {

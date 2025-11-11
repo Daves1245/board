@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
@@ -80,7 +80,18 @@ export async function GET() {
     }
 
     // Format response
-    const formatFeature = (feature: any) => ({
+    const formatFeature = (feature: {
+      id: string;
+      title: string;
+      description: string;
+      createdAt: Date;
+      implementedAt: Date | null;
+      creator: { id: string; username: string; firstName: string | null; lastName: string | null };
+      votes: number | null;
+      voteRecords?: { createdAt: Date }[];
+      parent: { id: string; title: string } | null;
+      variations?: unknown[];
+    }) => ({
       id: feature.id,
       title: feature.title,
       description: feature.description,
@@ -91,7 +102,7 @@ export async function GET() {
         username: feature.creator.username,
         displayName: feature.creator.firstName || feature.creator.username,
       },
-      voteTotal: feature.implementedAt ? feature.votes : feature.voteRecords.length,
+      voteTotal: feature.implementedAt ? feature.votes : (feature.voteRecords?.length || 0),
       userHasVoted: userVoteIds.has(feature.id),
       parent: feature.parent,
       variationCount: feature.variations?.length || 0,
