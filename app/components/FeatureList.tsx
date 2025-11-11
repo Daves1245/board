@@ -279,7 +279,7 @@ export function FeatureList() {
       {/* Pending Features (Being Voted On) */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          🗳️ Being Voted On ({data.features?.length || 0})
+          Being Voted On ({data.features?.length || 0})
         </h2>
 
         {!data.features || data.features.length === 0 ? (
