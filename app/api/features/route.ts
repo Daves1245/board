@@ -85,6 +85,8 @@ export async function GET() {
       title: string;
       description: string;
       createdAt: Date;
+      status: string;
+      implementationStartedAt: Date | null;
       implementedAt: Date | null;
       creator: { id: string; username: string; firstName: string | null; lastName: string | null };
       votes: number | null;
@@ -96,6 +98,8 @@ export async function GET() {
       title: feature.title,
       description: feature.description,
       createdAt: feature.createdAt,
+      status: feature.status as 'pending' | 'implementing' | 'implemented',
+      implementationStartedAt: feature.implementationStartedAt,
       implementedAt: feature.implementedAt,
       creator: {
         id: feature.creator.id,

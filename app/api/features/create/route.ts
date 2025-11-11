@@ -108,6 +108,8 @@ export async function POST(request: NextRequest) {
         title: feature.title,
         description: feature.description,
         createdAt: feature.createdAt,
+        status: 'pending' as const,
+        implementationStartedAt: null,
         implementedAt: feature.implementedAt,
         creator: {
           id: feature.creator.id,
