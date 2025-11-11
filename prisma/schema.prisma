@@ -13,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -35,36 +34,35 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  password      String
-  firstName     String?
-  lastName      String?
-  isStaff       Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  dateJoined    DateTime  @default(now())
-  accounts      Account[]
-  sessions      Session[]
-  features      Feature[] @relation("FeatureCreator")
-  votes         Vote[]
+  id         String    @id @default(cuid())
+  username   String    @unique
+  password   String
+  firstName  String?
+  lastName   String?
+  isStaff    Boolean   @default(false)
+  isActive   Boolean   @default(true)
+  dateJoined DateTime  @default(now())
+  accounts   Account[]
+  features   Feature[] @relation("FeatureCreator")
+  sessions   Session[]
+  votes      Vote[]
 }
 
 model Feature {
-  id              String    @id @default(cuid())
-  title           String    @db.VarChar(200)
-  description     String
-  creatorId       String
-  parentId        String?
-  createdAt       DateTime  @default(now())
-  status          String    @default("pending") // "pending", "implementing", "implemented"
-  implementationStartedAt DateTime?  // When GitHub Action was triggered
-  implementedAt   DateTime?          // When implementation completed
-  votes           Int?      // Historical vote count after implementation
-
-  creator         User      @relation("FeatureCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  parent          Feature?  @relation("FeatureVariations", fields: [parentId], references: [id], onDelete: SetNull)
-  variations      Feature[] @relation("FeatureVariations")
-  voteRecords     Vote[]
+  id                      String    @id @default(cuid())
+  title                   String    @db.VarChar(200)
+  description             String
+  creatorId               String
+  parentId                String?
+  createdAt               DateTime  @default(now())
+  implementedAt           DateTime?
+  votes                   Int?
+  implementationStartedAt DateTime?
+  status                  String    @default("pending")
+  creator                 User      @relation("FeatureCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  parent                  Feature?  @relation("FeatureVariations", fields: [parentId], references: [id])
+  variations              Feature[] @relation("FeatureVariations")
+  voteRecords             Vote[]
 
   @@index([status])
   @@index([implementedAt])
@@ -76,9 +74,8 @@ model Vote {
   userId    String
   featureId String
   createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   feature   Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, featureId])
 }
