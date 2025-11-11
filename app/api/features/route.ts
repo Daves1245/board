@@ -8,9 +8,9 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
-    // Get pending features ordered by vote count
+    // Get pending features (being voted on) ordered by vote count
     const pendingFeatures = await prisma.feature.findMany({
-      where: { implementedAt: null },
+      where: { status: 'pending' },
       include: {
         creator: {
           select: { id: true, username: true, firstName: true, lastName: true }
@@ -20,7 +20,7 @@ export async function GET() {
         },
         voteRecords: true,
         variations: {
-          where: { implementedAt: null },
+          where: { status: 'pending' },
           select: { id: true }
         }
       },
@@ -30,9 +30,26 @@ export async function GET() {
       ]
     })
 
-    // Get implemented features
+    // Get features currently being implemented by AI
+    const implementingFeatures = await prisma.feature.findMany({
+      where: { status: 'implementing' },
+      include: {
+        creator: {
+          select: { id: true, username: true, firstName: true, lastName: true }
+        },
+        parent: {
+          select: { id: true, title: true }
+        }
+      },
+      orderBy: [
+        { implementationStartedAt: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    })
+
+    // Get fully implemented features
     const implementedFeatures = await prisma.feature.findMany({
-      where: { implementedAt: { not: null } },
+      where: { status: 'implemented' },
       include: {
         creator: {
           select: { id: true, username: true, firstName: true, lastName: true }
@@ -83,6 +100,7 @@ export async function GET() {
 
     return NextResponse.json({
       features: pendingFeatures.map(formatFeature),
+      implementingFeatures: implementingFeatures.map(formatFeature),
       implementedFeatures: implementedFeatures.map(formatFeature),
       canSubmit,
       user: session?.user ? {

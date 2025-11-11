@@ -56,14 +56,17 @@ model Feature {
   creatorId       String
   parentId        String?
   createdAt       DateTime  @default(now())
-  implementedAt   DateTime?
+  status          String    @default("pending") // "pending", "implementing", "implemented"
+  implementationStartedAt DateTime?  // When GitHub Action was triggered
+  implementedAt   DateTime?          // When implementation completed
   votes           Int?      // Historical vote count after implementation
-  
+
   creator         User      @relation("FeatureCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   parent          Feature?  @relation("FeatureVariations", fields: [parentId], references: [id], onDelete: SetNull)
   variations      Feature[] @relation("FeatureVariations")
   voteRecords     Vote[]
 
+  @@index([status])
   @@index([implementedAt])
   @@index([createdAt])
 }

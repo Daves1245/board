@@ -117,12 +117,12 @@ export function FeatureCard({
           voteCount={feature.voteTotal}
           loading={isVoting}
           onClick={handleVote}
-          disabled={feature.implementedAt != null}
+          disabled={feature.status !== 'pending'}
         />
       </div>
       
-      {/* Test Implementation Button - Only show for non-implemented features */}
-      {!feature.implementedAt && session && (
+      {/* Test Implementation Button - Only show for pending features */}
+      {feature.status === 'pending' && session && (
         <div className="mt-4 pt-3 border-t border-gray-200">
           <button
             onClick={handleTestImplement}
@@ -143,9 +143,15 @@ export function FeatureCard({
         {feature.variationCount && feature.variationCount > 0 && (
           <span>{feature.variationCount} variations</span>
         )}
-        
-        {feature.implementedAt && (
-          <span className="text-green-600 font-medium">Implemented</span>
+
+        {feature.status === 'implementing' && (
+          <span className="text-blue-600 font-medium flex items-center">
+            <span className="animate-pulse mr-1">⚙️</span> Being Implemented
+          </span>
+        )}
+
+        {feature.status === 'implemented' && (
+          <span className="text-green-600 font-medium">✅ Implemented</span>
         )}
       </div>
     </div>

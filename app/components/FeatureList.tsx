@@ -32,6 +32,7 @@ export function FeatureList() {
       if (result && typeof result === 'object') {
         setData({
           features: result.features || [],
+          implementingFeatures: result.implementingFeatures || [],
           implementedFeatures: result.implementedFeatures || [],
           canSubmit: result.canSubmit || false,
           user: result.user || null
@@ -46,6 +47,7 @@ export function FeatureList() {
       // Set default data structure to prevent undefined errors
       setData({
         features: [],
+        implementingFeatures: [],
         implementedFeatures: [],
         canSubmit: false,
         user: null
@@ -58,23 +60,24 @@ export function FeatureList() {
   const handleVoteChange = (featureId: string, voteResponse: VoteResponse) => {
     if (!data) return
 
-    // Check if feature was just implemented
-    if (voteResponse.implemented && voteResponse.implementedAt) {
-      // Move feature from pending to implemented
-      const implementedFeature = data.features.find(f => f.id === featureId)
+    // Check if feature just moved to "implementing" status
+    if (voteResponse.implementing && voteResponse.status === 'implementing') {
+      // Move feature from pending to implementing
+      const implementingFeature = data.features.find(f => f.id === featureId)
 
-      if (implementedFeature) {
+      if (implementingFeature) {
         const updatedFeature: Feature = {
-          ...implementedFeature,
-          implementedAt: voteResponse.implementedAt,
+          ...implementingFeature,
+          status: 'implementing',
+          implementationStartedAt: new Date().toISOString(),
           voteTotal: voteResponse.voteTotal,
-          userHasVoted: false, // Votes are cleared when implemented
+          userHasVoted: false, // Votes are cleared when implementation starts
         }
 
         setData({
           ...data,
           features: data.features.filter(f => f.id !== featureId),
-          implementedFeatures: [updatedFeature, ...data.implementedFeatures],
+          implementingFeatures: [updatedFeature, ...data.implementingFeatures],
         })
 
         // Show implementation notification
@@ -89,7 +92,7 @@ export function FeatureList() {
       }
     }
 
-    // Normal vote update (not implemented)
+    // Normal vote update (still pending)
     const updateFeature = (feature: Feature) =>
       feature.id === featureId
         ? {
@@ -102,7 +105,6 @@ export function FeatureList() {
     setData({
       ...data,
       features: (data.features || []).map(updateFeature),
-      implementedFeatures: (data.implementedFeatures || []).map(updateFeature),
     })
   }
 
@@ -274,12 +276,12 @@ export function FeatureList() {
         />
       )}
 
-      {/* Pending Features */}
+      {/* Pending Features (Being Voted On) */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Pending Features ({data.features?.length || 0})
+          🗳️ Being Voted On ({data.features?.length || 0})
         </h2>
-        
+
         {!data.features || data.features.length === 0 ? (
           <p className="text-gray-600 text-center py-8">
             No features being voted on. Be the first to suggest one!
@@ -297,11 +299,35 @@ export function FeatureList() {
         )}
       </section>
 
-      {/* Implemented Features */}
+      {/* Currently Being Implemented */}
+      {data.implementingFeatures && data.implementingFeatures.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            🤖 Currently Being Implemented ({data.implementingFeatures.length})
+          </h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              These features reached 5 votes and are currently being implemented by our AI agent.
+              Check back soon to see them in action!
+            </p>
+          </div>
+          <div className="space-y-4">
+            {data.implementingFeatures.map((feature) => (
+              <FeatureCard
+                key={feature.id}
+                feature={feature}
+                onVoteChange={handleVoteChange}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Fully Implemented Features */}
       {data.implementedFeatures && data.implementedFeatures.length > 0 && (
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Implemented Features ({data.implementedFeatures.length})
+            ✅ Fully Implemented ({data.implementedFeatures.length})
           </h2>
           <div className="space-y-4">
             {data.implementedFeatures.map((feature) => (

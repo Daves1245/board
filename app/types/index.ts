@@ -10,6 +10,8 @@ export interface Feature {
   title: string
   description: string
   createdAt: string
+  status: 'pending' | 'implementing' | 'implemented'
+  implementationStartedAt?: string | null
   implementedAt?: string | null
   creator: User
   voteTotal: number
@@ -21,6 +23,7 @@ export interface Feature {
 
 export interface FeaturesResponse {
   features: Feature[]
+  implementingFeatures: Feature[]
   implementedFeatures: Feature[]
   canSubmit: boolean
   user: User | null
@@ -30,7 +33,7 @@ export interface VoteResponse {
   action: 'added' | 'removed'
   hasVoted: boolean
   voteTotal: number
-  implemented?: boolean
-  implementedAt?: string
+  implementing?: boolean
+  status?: 'pending' | 'implementing' | 'implemented'
   message?: string
 }
