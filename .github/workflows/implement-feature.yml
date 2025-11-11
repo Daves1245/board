@@ -122,27 +122,25 @@ jobs:
           echo "Feature Description: ${{ github.event.inputs.feature_content }}" >> claude-attempt.log
           echo "Timestamp: $(date)" >> claude-attempt.log
           git add claude-attempt.log
-          git commit -m "$(cat <<EOF
+          git commit -F- <<'COMMITMSG'
 docs: Claude Code implementation attempt for ${{ github.event.inputs.feature_title }}
 
 Claude Code was triggered but may have timed out or failed to make changes.
 Feature ID: ${{ github.event.inputs.feature_id }}
 
 🤖 Attempted via GitHub Actions
-EOF
-)"
+COMMITMSG
         else
           echo "✅ Changes detected, committing implementation..."
           git add .
-          git commit -m "$(cat <<EOF
+          git commit -F- <<'COMMITMSG'
 feat: auto-implement ${{ github.event.inputs.feature_title }}
 
 Auto-implemented feature #${{ github.event.inputs.feature_id }}
 ${{ github.event.inputs.feature_content }}
 
 🤖 Implemented by Claude Code via GitHub Actions
-EOF
-)"
+COMMITMSG
         fi
         
         echo "About to push to: $(git remote get-url origin)"
