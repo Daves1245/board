@@ -239,7 +239,7 @@ export function FeatureList() {
         
         {!data.features || data.features.length === 0 ? (
           <p className="text-gray-600 text-center py-8">
-            No pending features. Be the first to submit one!
+            No features being voted on. Be the first to suggest one!
           </p>
         ) : (
           <div className="space-y-4">
