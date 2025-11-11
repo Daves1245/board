@@ -5,6 +5,7 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import { Feature, FeaturesResponse, VoteResponse } from '@/types'
 import { FeatureCard } from './FeatureCard'
 import { CreateFeatureForm } from './CreateFeatureForm'
+import { Toast } from './Toast'
 import { LogIn, LogOut, User, UserPlus } from 'lucide-react'
 
 export function FeatureList() {
@@ -13,6 +14,7 @@ export function FeatureList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'implementation' } | null>(null)
 
   useEffect(() => {
     fetchFeatures()
@@ -56,8 +58,40 @@ export function FeatureList() {
   const handleVoteChange = (featureId: string, voteResponse: VoteResponse) => {
     if (!data) return
 
-    const updateFeature = (feature: Feature) => 
-      feature.id === featureId 
+    // Check if feature was just implemented
+    if (voteResponse.implemented && voteResponse.implementedAt) {
+      // Move feature from pending to implemented
+      const implementedFeature = data.features.find(f => f.id === featureId)
+
+      if (implementedFeature) {
+        const updatedFeature: Feature = {
+          ...implementedFeature,
+          implementedAt: voteResponse.implementedAt,
+          voteTotal: voteResponse.voteTotal,
+          userHasVoted: false, // Votes are cleared when implemented
+        }
+
+        setData({
+          ...data,
+          features: data.features.filter(f => f.id !== featureId),
+          implementedFeatures: [updatedFeature, ...data.implementedFeatures],
+        })
+
+        // Show implementation notification
+        if (voteResponse.message) {
+          setToast({
+            message: voteResponse.message,
+            type: 'implementation'
+          })
+        }
+
+        return
+      }
+    }
+
+    // Normal vote update (not implemented)
+    const updateFeature = (feature: Feature) =>
+      feature.id === featureId
         ? {
             ...feature,
             userHasVoted: voteResponse.hasVoted,
@@ -120,6 +154,15 @@ export function FeatureList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Navigation Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">

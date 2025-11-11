@@ -31,5 +31,6 @@ export interface VoteResponse {
   hasVoted: boolean
   voteTotal: number
   implemented?: boolean
+  implementedAt?: string
   message?: string
 }

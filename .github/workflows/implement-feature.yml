@@ -65,18 +65,38 @@ jobs:
         claude_args: --dangerously-skip-permissions --verbose
         show_full_output: true
         prompt: |
-          Please implement this feature request for our Next.js feature voting board:
-          
-          Feature Title: ${{ github.event.inputs.feature_title }}
-          Feature Description: ${{ github.event.inputs.feature_content }}
-          
-          This is a Next.js 14+ app with TypeScript, Tailwind CSS, Prisma ORM, and NextAuth.js authentication.
-          Please analyze the existing codebase structure, implement the requested feature following existing patterns,
-          ensure TypeScript compatibility, maintain existing styling, and commit your changes.
-          
-          Key files: app/page.tsx, app/components/, app/api/, prisma/schema.prisma
-          
-          Please implement this feature and integrate it seamlessly with the existing voting board interface.
+          IMPORTANT: Before implementing this feature, you MUST:
+          1. Read CLAUDE.md completely - it contains critical project information
+          2. Review the "Project Structure & Key Files" section to understand where to look
+          3. Read "Understanding User Intent" to properly analyze this request
+          4. Check "Protected Systems" section - NEVER modify the voting mechanism
+          5. Read "Verifying Changes" to ensure quality before committing
+
+          Feature Request:
+          Title: ${{ github.event.inputs.feature_title }}
+          Description: ${{ github.event.inputs.feature_content }}
+          Feature ID: ${{ github.event.inputs.feature_id }}
+
+          Implementation Process:
+          1. Read CLAUDE.md thoroughly - understand the project architecture and protected systems
+          2. Analyze the feature request carefully - understand exactly what is being asked
+          3. Review the "Project Structure & Key Files" section to know where each component lives
+          4. Explore relevant files in the codebase to understand current implementation patterns
+          5. Plan your implementation - identify files to modify and approach to take
+          6. CHECK: Does this feature request modify the voting mechanism? If yes, proceed with extreme caution
+          7. Implement the feature following existing code patterns and standards
+          8. If the feature requests documentation updates, follow the "Documentation Updates" guidelines
+          9. Run `npm run build` to verify no errors
+          10. Verify the implementation matches the feature request exactly
+          11. Commit your changes with a clear message referencing feature ID ${{ github.event.inputs.feature_id }}
+
+          CRITICAL REMINDERS:
+          - The voting and auto-implementation system is the core of The Board
+          - NEVER modify voting logic unless the feature explicitly requests it
+          - Follow the exact patterns in CLAUDE.md
+          - Implement ONLY what is requested, nothing more
+          - Verify your work matches the request before committing
+          - Ensure the build succeeds before committing
 
     - name: Check Claude Code results and commit
       if: always()

@@ -90,8 +90,24 @@ export async function POST(
     // Check if feature should be auto-implemented (5 votes threshold)
     if (voteCount >= 5 && !feature.implementedAt) {
       try {
-        // Trigger GitHub Action for implementation
-        const implementResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/implement`, {
+        // Mark feature as implemented immediately
+        await prisma.feature.update({
+          where: { id: featureId },
+          data: {
+            implementedAt: new Date(),
+            votes: voteCount,
+          }
+        })
+
+        // Clear all votes for implemented feature
+        await prisma.vote.deleteMany({
+          where: { featureId: featureId }
+        })
+
+        console.log(`✅ Feature marked as implemented: "${feature.title}" with ${voteCount} votes`)
+
+        // Trigger GitHub Action for implementation (fire and forget)
+        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/implement`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -99,23 +115,26 @@ export async function POST(
             title: feature.title,
             content: feature.description
           })
+        }).then((implementResponse) => {
+          if (implementResponse.ok) {
+            console.log(`🚀 GitHub Action triggered for: "${feature.title}"`)
+          } else {
+            console.error('Failed to trigger GitHub implementation')
+          }
+        }).catch((implementError) => {
+          console.error('Error triggering auto-implementation:', implementError)
         })
 
-        if (implementResponse.ok) {
-          console.log(`🚀 Feature auto-implementation triggered: "${feature.title}" with ${voteCount} votes`)
-          
-          return NextResponse.json({
-            action,
-            hasVoted,
-            voteTotal: voteCount,
-            implemented: true,
-            message: `Feature "${feature.title}" reached ${voteCount} votes and is being implemented by our AI agent!`
-          })
-        } else {
-          console.error('Failed to trigger GitHub implementation:', await implementResponse.text())
-        }
+        return NextResponse.json({
+          action,
+          hasVoted: false, // User's vote was cleared
+          voteTotal: voteCount,
+          implemented: true,
+          implementedAt: new Date().toISOString(),
+          message: `Feature "${feature.title}" reached ${voteCount} votes and is being implemented by our AI agent!`
+        })
       } catch (implementError) {
-        console.error('Error triggering auto-implementation:', implementError)
+        console.error('Error marking feature as implemented:', implementError)
         // Continue with normal response if implementation fails
       }
     }

@@ -41,14 +41,8 @@ export function FeatureCard({
       }
 
       const result: VoteResponse = await response.json()
-      
-      // Show implementation notification
-      if (result.implemented && result.message) {
-        alert(`🚀 ${result.message}`)
-        // Optionally refresh the page to show updated state
-        window.location.reload()
-      }
-      
+
+      // Notify parent component to update state (includes showing toast for implementation)
       onVoteChange?.(feature.id, result)
     } catch (error) {
       console.error('Vote error:', error)
