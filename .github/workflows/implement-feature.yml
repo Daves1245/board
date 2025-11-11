@@ -163,22 +163,27 @@ jobs:
       run: |
         echo "📝 Marking feature as implemented in database..."
 
+        # Use production URL (fallback to Vercel URL if NEXTAUTH_URL not set)
+        API_URL="${NEXTAUTH_URL:-https://board-three-virid.vercel.app}/api/features/${{ github.event.inputs.feature_id }}/complete"
+        echo "Calling: $API_URL"
+
         # Call the API to mark feature as implemented
         response=$(curl -s -w "\n%{http_code}" -X POST \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "${NEXTAUTH_URL:-https://board-three-virid.vercel.app}/api/features/${{ github.event.inputs.feature_id }}/complete")
+          "$API_URL")
 
         http_code=$(echo "$response" | tail -n1)
         body=$(echo "$response" | head -n-1)
 
+        echo "Response code: $http_code"
+        echo "Response body: $body"
+
         if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
           echo "✅ Feature successfully marked as implemented"
-          echo "$body"
         else
           echo "⚠️ Failed to mark feature as implemented (HTTP $http_code)"
-          echo "$body"
-          echo "The feature was deployed but status wasn't updated - please update manually"
+          echo "The feature was deployed but status wasn't updated"
         fi
 
     - name: Trigger deployment
