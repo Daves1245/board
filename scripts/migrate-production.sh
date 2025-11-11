@@ -15,9 +15,22 @@ fi
 
 echo "✅ Environment variables pulled successfully"
 
+# Set environment variables from production file
+echo "📦 Loading production environment variables..."
+export $(grep -v '^#' .env.production | xargs)
+
+# Verify DATABASE_URL is loaded
+if [ -z "$DATABASE_URL" ]; then
+    echo "❌ DATABASE_URL not found in environment"
+    echo "Check your .env.production file"
+    exit 1
+fi
+
+echo "✅ DATABASE_URL loaded: ${DATABASE_URL:0:50}..."
+
 # Run Prisma migration
 echo "🔄 Running database migration..."
-npx dotenv -e .env.production -- npx prisma migrate deploy
+npx prisma migrate deploy
 
 if [ $? -eq 0 ]; then
     echo "✅ Database migration completed successfully"
@@ -27,12 +40,13 @@ if [ $? -eq 0 ]; then
 else
     echo "❌ Database migration failed"
     echo "Check your DATABASE_URL and ensure the database is accessible"
+    echo "Full DATABASE_URL: $DATABASE_URL"
     exit 1
 fi
 
-# Optional: Generate Prisma client
+# Generate Prisma client
 echo "📦 Generating Prisma client..."
-npx dotenv -e .env.production -- npx prisma generate
+npx prisma generate
 
 echo ""
 echo "🎉 Production setup complete!"
