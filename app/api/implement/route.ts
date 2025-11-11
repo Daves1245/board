@@ -66,9 +66,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `GitHub Action triggered for: ${title}`,
+      message: `Feature "${title}" is now being implemented by our AI agent!`,
       id: id,
-      status: 'implementing'
+      implementing: true,
+      status: 'implementing',
+      hasVoted: false, // Votes cleared
+      voteTotal: voteCount
     });
 
   } catch (error) {

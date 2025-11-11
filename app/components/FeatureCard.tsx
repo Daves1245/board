@@ -76,12 +76,16 @@ export function FeatureCard({
       }
 
       const result = await response.json()
-      
-      // Show GitHub Action trigger confirmation
-      alert(`🚀 ${result.message}\n\nThe feature will be implemented by our AI agent via GitHub Actions. Check the repository for a new pull request in a few minutes.`)
-      
-      // Mark feature as implemented in UI (the GitHub webhook will update the database when complete)
-      window.location.reload()
+
+      // Notify parent component to update state (move feature to "implementing" section)
+      onVoteChange?.(feature.id, {
+        action: 'added',
+        hasVoted: result.hasVoted || false,
+        voteTotal: result.voteTotal || 0,
+        implementing: true,
+        status: 'implementing',
+        message: result.message
+      })
     } catch (error) {
       console.error('GitHub implementation error:', error)
       alert(`Failed to trigger implementation: ${error instanceof Error ? error.message : 'Unknown error'}`)
