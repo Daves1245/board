@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { triggerImplementation } from '@/lib/trigger-implementation';
 
 export async function POST(request: NextRequest) {
   try {
     const { title, content, id } = await request.json();
-
-    if (!process.env.GITHUB_TOKEN) {
-      throw new Error('GITHUB_TOKEN environment variable is required');
-    }
-
-    if (!process.env.GITHUB_REPOSITORY) {
-      throw new Error('GITHUB_REPOSITORY environment variable is required (format: owner/repo)');
-    }
 
     // Get current vote count before clearing votes
     const voteCount = await prisma.vote.count({
@@ -33,40 +26,33 @@ export async function POST(request: NextRequest) {
       where: { featureId: id }
     });
 
-    console.log(`🤖 Triggering GitHub Action for: "${title}"`);
-
     // Trigger GitHub Action workflow
-    const response = await fetch(
-      `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/implement-feature.yml/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'Authorization': `token ${process.env.GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ref: 'main', // or your default branch
-          inputs: {
-            feature_id: id.toString(),
-            feature_title: title,
-            feature_content: content
-          }
-        })
-      }
-    );
+    const result = await triggerImplementation({
+      featureId: id.toString(),
+      title,
+      description: content
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+    if (!result.success) {
+      console.error(`❌ Failed to trigger GitHub Action: ${result.message}`);
+      // Return error but don't revert database changes
+      return NextResponse.json({
+        success: false,
+        error: result.message,
+        message: `Feature marked as implementing, but GitHub Action failed to trigger: ${result.message}`,
+        id: id,
+        implementing: true,
+        status: 'implementing',
+        hasVoted: false,
+        voteTotal: voteCount
+      }, { status: 500 });
     }
 
-    console.log(`✅ GitHub Action triggered successfully for: "${title}"`);
     console.log(`📋 Feature ID: ${id}, Title: ${title}`);
 
     return NextResponse.json({
       success: true,
-      message: `Feature "${title}" is now being implemented by our AI agent!`,
+      message: result.message,
       id: id,
       implementing: true,
       status: 'implementing',

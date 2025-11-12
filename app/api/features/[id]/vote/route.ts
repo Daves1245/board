@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { checkVoteLimit } from "@/lib/rate-limit"
+import { triggerImplementation } from "@/lib/trigger-implementation"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -108,22 +109,18 @@ export async function POST(
         console.log(`🔄 Feature implementation started: "${feature.title}" with ${voteCount} votes`)
 
         // Trigger GitHub Action for implementation (fire and forget)
-        fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/implement`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: feature.id,
-            title: feature.title,
-            content: feature.description
-          })
-        }).then((implementResponse) => {
-          if (implementResponse.ok) {
-            console.log(`🚀 GitHub Action triggered for: "${feature.title}"`)
+        triggerImplementation({
+          featureId: feature.id,
+          title: feature.title,
+          description: feature.description
+        }).then((result) => {
+          if (result.success) {
+            console.log(`🚀 ${result.message}`)
           } else {
-            console.error('Failed to trigger GitHub implementation')
+            console.error(`❌ Failed to trigger implementation: ${result.message}`)
           }
-        }).catch((implementError) => {
-          console.error('Error triggering auto-implementation:', implementError)
+        }).catch((error) => {
+          console.error('Error triggering auto-implementation:', error)
         })
 
         return NextResponse.json({
