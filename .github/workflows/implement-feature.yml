@@ -33,15 +33,15 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
-    
+
     - name: Validate GitHub Token
       run: |
         echo "Testing GitHub token validity..."
-        
+
         # Test basic GitHub API access
         response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/${{ github.repository }})
-        
+
         if echo "$response" | grep -q '"private"'; then
           echo "✅ GitHub token is valid and has repository access"
           echo "Repository: $(echo "$response" | grep '"full_name"' | cut -d'"' -f4)"
@@ -50,12 +50,12 @@ jobs:
           echo "Response: $response"
           exit 1
         fi
-        
+
         # Check token permissions
         curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission \
           | grep -q '"admin"\|"write"' && echo "✅ Token has write permissions" || echo "⚠️ Limited permissions detected"
-    
+
     - name: Use Claude Code Action
       uses: anthropics/claude-code-action@v1
       timeout-minutes: 5
@@ -100,21 +100,19 @@ jobs:
 
     - name: Check Claude Code results and commit
       if: always()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Checking Claude Code Action results..."
-        
+
         echo "Current git status:"
         git status
-        
+
         echo "Configuring git user..."
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config user.name "github-actions[bot]"
-        
+
         echo "Setting up authentication..."
         git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-        
+
         if git diff --quiet && git diff --staged --quiet; then
           echo "⚠️ No changes detected from Claude Code"
           echo "Creating placeholder commit to indicate attempt..."
@@ -123,31 +121,37 @@ jobs:
           echo "Timestamp: $(date)" >> claude-attempt.log
           git add claude-attempt.log
 
-          COMMIT_MSG="docs: Claude Code implementation attempt for ${{ github.event.inputs.feature_title }}
+          # Write commit message to file to handle special characters safely
+          {
+            echo "docs: Claude Code implementation attempt for ${{ github.event.inputs.feature_title }}"
+            echo ""
+            echo "Claude Code was triggered but may have timed out or failed to make changes."
+            echo "Feature ID: ${{ github.event.inputs.feature_id }}"
+            echo ""
+            echo "🤖 Attempted via GitHub Actions"
+          } > /tmp/commit-msg.txt
 
-          Claude Code was triggered but may have timed out or failed to make changes.
-          Feature ID: ${{ github.event.inputs.feature_id }}
-
-          🤖 Attempted via GitHub Actions"
-
-          git commit -m "$COMMIT_MSG"
+          git commit -F /tmp/commit-msg.txt
         else
           echo "✅ Changes detected, committing implementation..."
           git add .
 
-          COMMIT_MSG="feat: auto-implement ${{ github.event.inputs.feature_title }}
+          # Write commit message to file to handle special characters safely
+          {
+            echo "feat: auto-implement ${{ github.event.inputs.feature_title }}"
+            echo ""
+            echo "Auto-implemented feature #${{ github.event.inputs.feature_id }}"
+            echo "${{ github.event.inputs.feature_content }}"
+            echo ""
+            echo "🤖 Implemented by Claude Code via GitHub Actions"
+          } > /tmp/commit-msg.txt
 
-          Auto-implemented feature #${{ github.event.inputs.feature_id }}
-          ${{ github.event.inputs.feature_content }}
-
-          🤖 Implemented by Claude Code via GitHub Actions"
-
-          git commit -m "$COMMIT_MSG"
+          git commit -F /tmp/commit-msg.txt
         fi
-        
+
         echo "About to push to: $(git remote get-url origin)"
         echo "Current branch: $(git branch --show-current)"
-        
+
         echo "Pushing changes..."
         git push origin HEAD:main || {
           echo "❌ Push failed with exit code $?"
@@ -159,9 +163,9 @@ jobs:
           git log -1 --oneline
           exit 1
         }
-        
+
         echo "✅ Successfully pushed changes!"
-        
+
     - name: Mark feature as implemented
       if: success()
       env:
